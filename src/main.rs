@@ -1,3 +1,6 @@
+#[allow(dead_code)]
+mod stomp;
+
 use futures_util::{future, pin_mut, stream::TryStreamExt, StreamExt};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
@@ -16,7 +19,7 @@ use tokio::net::{TcpListener, TcpStream};
 #[tokio::main]
 async fn main() {
     tokio::spawn(async move {
-        server().await;
+        server().await.expect("Error starting server");
     });
 
     tokio::spawn(async move {
