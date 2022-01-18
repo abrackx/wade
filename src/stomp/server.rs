@@ -1,4 +1,7 @@
-enum ServerCommand {
+use std::fmt;
+
+#[derive(PartialEq, Debug)]
+pub enum ServerCommand {
     CONNECTED,
     MESSAGE,
     RECEIPT,
@@ -16,5 +19,11 @@ impl std::str::FromStr for ServerCommand {
             "ERROR" => Ok(ServerCommand::ERROR),
             _ => Err(format!("'{}' is not a valid value for ServerCommand", maybe_command))
         }
+    }
+}
+
+impl fmt::Display for ServerCommand {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }

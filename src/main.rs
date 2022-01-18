@@ -39,7 +39,7 @@ async fn read_stdin(tx: futures_channel::mpsc::UnboundedSender<Message>) {
             Ok(n) => n,
         };
         buf.truncate(n);
-        let frame = stomp::client::StompFrame {
+        let frame = stomp::frame::StompFrame::<ClientCommand> {
             command: ClientCommand::SEND,
             headers: vec![("some-header".to_string(), "test".to_string())],
             body: Some(String::from_utf8(buf).expect("oops")),
