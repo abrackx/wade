@@ -1,10 +1,3 @@
-#[allow(dead_code)]
-mod stomp;
-
-use futures_util::{future, pin_mut, stream::TryStreamExt, StreamExt};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
-
 use std::{
     collections::HashMap,
     io::Error as IoError,
@@ -13,8 +6,15 @@ use std::{
 };
 
 use futures_channel::mpsc::{unbounded, UnboundedSender};
-
+use futures_util::{future, pin_mut, stream::TryStreamExt, StreamExt};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
+use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
+
+use crate::stomp::client::ClientCommand;
+
+#[allow(dead_code)]
+mod stomp;
 
 #[tokio::main]
 async fn main() {
@@ -39,7 +39,12 @@ async fn read_stdin(tx: futures_channel::mpsc::UnboundedSender<Message>) {
             Ok(n) => n,
         };
         buf.truncate(n);
-        tx.unbounded_send(Message::binary(buf)).unwrap();
+        let frame = stomp::client::StompFrame {
+            command: ClientCommand::SEND,
+            headers: vec![("some-header".to_string(), "test".to_string())],
+            body: Some(String::from_utf8(buf).expect("oops")),
+        };
+        tx.unbounded_send(Message::binary(frame.serialize())).unwrap();
     }
 }
 
@@ -86,7 +91,7 @@ async fn handle_connection(peer_map: PeerMap, raw_stream: TcpStream, addr: Socke
 
     let broadcast_incoming = incoming.try_for_each(|msg| {
         println!(
-            "Received a message from {}: {}",
+            "Received a message from {}:\n{}",
             addr,
             msg.to_text().unwrap()
         );
