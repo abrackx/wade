@@ -22,11 +22,9 @@ pub fn serialize(frame: Frame) -> Vec<u8> {
         }
         bytes.push(b'\n');
     });
+    bytes.push(b'\n');
     if let Some(body) = frame.body {
-        bytes.push(b'\n');
         bytes.extend_from_slice(body.as_bytes());
-    } else {
-        bytes.push(b'\n');
     }
     bytes.push(b'\x00');
     bytes

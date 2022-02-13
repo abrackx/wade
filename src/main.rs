@@ -12,7 +12,7 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 
 use crate::stomp::command::Command;
-use crate::stomp::frame::serialize;
+use crate::stomp::frame::{deserialize, serialize};
 
 #[allow(dead_code)]
 mod stomp;
@@ -41,7 +41,7 @@ async fn read_stdin(tx: futures_channel::mpsc::UnboundedSender<Message>) {
         };
         buf.truncate(n);
         let frame = stomp::frame::Frame {
-            command: Command::SEND,
+            command: Command::MESSAGE,
             headers: vec![("some-header".to_string(), "test".to_string())],
             body: Some(String::from_utf8(buf).expect("oops")),
         };
@@ -96,6 +96,8 @@ async fn handle_connection(peer_map: PeerMap, raw_stream: TcpStream, addr: Socke
             addr,
             msg.to_text().unwrap()
         );
+        let frame = deserialize(msg.clone().into_data()).unwrap();
+        println!("Received Stomp Frame: {:?}", frame);
         let peers = peer_map.lock().unwrap();
 
         // We want to broadcast the message to everyone except ourselves.
