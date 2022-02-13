@@ -39,10 +39,11 @@ pub fn deserialize(maybe_frame: Vec<u8>) -> Result<Frame, ()> {
             let mut body = None;
             let mut headers: Vec<(String, String)> = vec![];
             for (i, x) in frame_split.iter().enumerate().skip(1) {
-                if x.is_empty() {
-                    let mut almost_body = frame_split[i + 1].to_string();
-                    almost_body.pop();
-                    body = Some(almost_body);
+                if x.is_empty() { //if we hit an empty line, we know the next line is the body (if it exists)
+                    let mut z = frame_split[i + 1..].join("\n").to_string(); //join the rest back together to re-form body
+                    z.pop(); //remove the null octect we don't care about that
+                    //todo: spec says that you can have new lines after null octect
+                    body = Some(z);
                     break;
                 }
                 let spl: Vec<&str> = x.split(":").collect();
@@ -54,7 +55,7 @@ pub fn deserialize(maybe_frame: Vec<u8>) -> Result<Frame, ()> {
                 body,
             })
         }
-        Err(_) => { Err(()) }
+        Err(_) => { Err(()) } //todo
     }
 }
 
@@ -114,7 +115,7 @@ host:example.com\n\n\x00"
         let data = b"MESSAGE
 foo:foo
 accept-version:1.2
-host:example.com\n\n\x00"
+host:example.com\n\nblah\x00"
             .to_vec();
         let headers = vec![
             ("foo".to_string(), "foo".to_string()),
@@ -124,7 +125,7 @@ host:example.com\n\n\x00"
         let frame = Frame {
             command: Command::MESSAGE,
             headers,
-            body: None,
+            body: Some("blah".to_string()),
         };
         assert_eq!(data, serialize(frame));
     }
